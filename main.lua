@@ -14,9 +14,17 @@ highScore = 0
 floorHeight = 30
 
 love.window.setTitle('Flappy Bird but Again!')
+love.window.setMode(windowWidth, windowHeight, {
+    fullscreen = false,
+    resizable = true,
+    borderless = false,
+    vsync = true
+})
 
 -- set filter to nearest neighbor
 love.graphics.setDefaultFilter('nearest', 'nearest')
+
+playerSprite = love.graphics.newImage('resources/sprites/bingus.png')
 
 -- Create a pipe
 function createPipe()
@@ -39,13 +47,6 @@ function createPipe()
 end
 
 function love.load()
-    love.window.setMode(windowWidth, windowHeight, {
-        fullscreen = false,
-        resizable = true,
-        borderless = false,
-        vsync = true
-    })
-
     gameState = states.start
 
     -- Player table
@@ -93,7 +94,6 @@ function love.resize(w, h)
     windowWidth, windowHeight = w, h
 end
 
--- Draw player in draw function
 function love.draw()
     -- Initialize canvas
     local canvas = love.graphics.newCanvas(gameWidth, gameHeight)
@@ -115,8 +115,9 @@ function love.draw()
     love.graphics.rectangle('fill', 0, gameHeight - floorHeight, gameWidth, floorHeight)
 
     -- Draw player
-    love.graphics.setColor(1, 1, 0)
-    love.graphics.rectangle('fill', player.x, player.y, player.width, player.height)
+    love.graphics.setColor(1, 1, 1)
+    love.graphics.draw(playerSprite, player.x, player.y, 0, player.width / playerSprite:getWidth(),
+        player.height / playerSprite:getHeight())
 
     -- Reset canvas
     love.graphics.setCanvas()
