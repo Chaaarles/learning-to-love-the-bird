@@ -1,3 +1,5 @@
+local Player = require 'player'
+
 gameWidth = 180
 gameHeight = 320
 
@@ -50,24 +52,14 @@ function love.load()
     gameState = states.start
 
     -- Player table
-    local player = {}
-    player.x = gameWidth / 4
-    player.y = gameHeight / 2
-    player.width = 20
-    player.height = 20
-    player.velocity = 0
-    player.gravity = 1000
-    player.jump = -300
-    player.maxVelocity = 550
-
-    _G.player = player
+    player = Player:new()
 
     -- Set up pipes
     pipes = {}
     pipeTimer = 0
     pipeInterval = 2
     pipeWidth = 30
-    pipeGap = 80
+    pipeGap = 85
     pipeSpeed = 80
 
     table.insert(pipes, createPipe())
@@ -81,13 +73,11 @@ end
 
 -- Update player position in update function
 function love.update(dt)
-    switch = {
-        [states.start] = startStateUpdate,
-        [states.play] = playStateUpdate,
-        [states.gameOver] = gameOverStateUpdate
-    }
+    player:update(dt)
 
-    switch[gameState](dt)
+    if (gameState == states.play) then
+        playStateUpdate(dt)
+    end
 end
 
 function love.resize(w, h)
@@ -116,8 +106,7 @@ function love.draw()
 
     -- Draw player
     love.graphics.setColor(1, 1, 1)
-    love.graphics.draw(playerSprite, player.x, player.y, 0, player.width / playerSprite:getWidth(),
-        player.height / playerSprite:getHeight())
+    player:draw()
 
     -- Reset canvas
     love.graphics.setCanvas()
@@ -149,17 +138,12 @@ end
 function actionHandler()
     if gameState == states.start then
         gameState = states.play
-        playerJump()
+        player:jump()
     elseif gameState == states.play then
-        playerJump()
+        player:jump()
     elseif gameState == states.gameOver then
         love.load()
     end
-end
-
-function playerJump()
-    player.velocity = math.min(player.velocity, 0)
-    player.velocity = player.velocity + player.jump
 end
 
 function handleCollision()
@@ -170,21 +154,7 @@ function handleCollision()
     gameState = states.gameOver
 end
 
-function startStateUpdate(dt)
-    -- oscillate player Y position
-    player.y = player.y + math.sin(love.timer.getTime() * 5) * dt * 50
-end
-
 function playStateUpdate(dt)
-    player.velocity = player.velocity + player.gravity * dt
-    if player.velocity > player.maxVelocity then
-        player.velocity = player.maxVelocity
-    elseif player.velocity < -player.maxVelocity then
-        player.velocity = -player.maxVelocity
-    end
-
-    player.y = player.y + player.velocity * dt
-
     -- Update pipes
     pipeTimer = pipeTimer + dt
     if pipeTimer > pipeInterval then
@@ -222,17 +192,6 @@ function playStateUpdate(dt)
     end
 end
 
-function gameOverStateUpdate(dt)
-    -- player falls to the floor
-    player.velocity = player.velocity + player.gravity * dt
-    player.y = player.y + player.velocity * dt
-
-    if player.y + player.height > gameHeight - floorHeight then
-        player.y = gameHeight - floorHeight - player.height
-        player.velocity = 0
-    end
-end
-
 function renderUI()
     love.graphics.setColor(0, 0, 0)
 
@@ -258,6 +217,6 @@ function renderUI()
 
         local text = 'High Score: ' .. highScore
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, gameWidth / 2 - textWidth / 2, gameHeight / 2 + 50)
+        love.graphics.print(text, gameWidth / 2 - textWidth / 2, gameHeight / 2 + 20)
     end
 end
