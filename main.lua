@@ -13,7 +13,7 @@ states = {
 
 highScore = 0
 
-floorHeight = 30
+floorHeight = 32
 
 love.window.setTitle('Flappy Bird but Again!')
 love.window.setMode(windowWidth, windowHeight, {
@@ -26,13 +26,13 @@ love.window.setMode(windowWidth, windowHeight, {
 -- set filter to nearest neighbor
 love.graphics.setDefaultFilter('nearest', 'nearest')
 
-playerSprite = love.graphics.newImage('resources/sprites/bingus.png')
-
 -- Create a pipe
 function createPipe()
     local pipe = {}
     pipe.x = gameWidth + 50
-    pipe.y = math.random(50, gameHeight - floorHeight - 50)
+    local minY = pipeGap / 2 + 32
+    local maxY = gameHeight - floorHeight - pipeGap / 2 - 32
+    pipe.y = math.floor(math.random(minY, maxY))
     pipe.scored = false
 
     pipe.top = {
@@ -49,6 +49,8 @@ function createPipe()
 end
 
 function love.load()
+    loadTextures()
+
     gameState = states.start
 
     -- Player table
@@ -58,17 +60,23 @@ function love.load()
     pipes = {}
     pipeTimer = 0
     pipeInterval = 2
-    pipeWidth = 30
-    pipeGap = 85
+    pipeWidth = 32
+    pipeGap = 80
     pipeSpeed = 80
+
+    groundSpeed = 80
+    groundPosition = 0
+
+    backgroundSpeed = 20
+    backgroundPosition = 0
 
     table.insert(pipes, createPipe())
 
     score = 0
 
     -- Load font
-    font = love.graphics.newFont('resources/fonts/CherryBombOne-Regular.ttf', 14)
-    fontXL = love.graphics.newFont('resources/fonts/CherryBombOne-Regular.ttf', 28)
+    font = love.graphics.newFont('resources/fonts/Jersey10-Regular.ttf', 21, 'mono')
+    fontXL = love.graphics.newFont('resources/fonts/Jersey10-Regular.ttf', 33, 'mono')
 end
 
 -- Update player position in update function
@@ -88,21 +96,43 @@ function love.draw()
     -- Initialize canvas
     local canvas = love.graphics.newCanvas(gameWidth, gameHeight)
     love.graphics.setCanvas(canvas)
-    love.graphics.clear(.7, 1, 1)
+
+    love.graphics.setColor(1, 1, 1)
+
+    -- Draw background
+    love.graphics.draw(textures.backgroundTexture, textures.background.top, 0, 0, 0, 1, 100)
+    for i = backgroundPosition, gameWidth, 256 do
+        love.graphics.draw(textures.backgroundTexture, textures.background.full, i, gameHeight - 256 - floorHeight)
+    end
 
     -- Draw pipes
-    love.graphics.setColor(0, 0.7, 0)
+    love.graphics.setColor(1, 1, 1)
     for i, pipe in ipairs(pipes) do
-        love.graphics.rectangle('fill', pipe.x, pipe.top.y, pipeWidth, pipe.top.height)
-        love.graphics.rectangle('fill', pipe.x, pipe.bottom.y, pipeWidth, pipe.bottom.height)
+        -- draw top pipe
+        love.graphics
+            .draw(textures.tiles, textures.greenPipe.bottom, pipe.x, pipe.top.y + pipe.top.height - 32, 0, 1, 1)
+        love.graphics.draw(textures.tiles, textures.greenPipe.middle, pipe.x, pipe.top.y, 0, 1,
+            (pipe.top.height / 16) - 2)
+
+        -- draw bottom pipe
+        love.graphics.draw(textures.tiles, textures.greenPipe.top, pipe.x, pipe.bottom.y, 0, 1, 1)
+        love.graphics.draw(textures.tiles, textures.greenPipe.middle, pipe.x, pipe.bottom.y + 16, 0, 1,
+            (pipe.bottom.height / 16) - 2)
     end
 
     -- Draw score
     renderUI()
 
-    -- Draw floor
-    love.graphics.setColor(0, 0, 0.7)
-    love.graphics.rectangle('fill', 0, gameHeight - floorHeight, gameWidth, floorHeight)
+    -- Draw floor as repeating tiles. Scrolling across the screen.
+    love.graphics.setColor(1, 1, 1)
+    -- Top level
+    for i = groundPosition, gameWidth, 64 do
+        love.graphics.draw(textures.tiles, textures.ground.top, i, gameHeight - floorHeight)
+    end
+    -- Fill
+    for i = groundPosition, gameWidth, 16 do
+        love.graphics.draw(textures.tiles, textures.ground.fill, i, gameHeight - floorHeight + 16)
+    end
 
     -- Draw player
     love.graphics.setColor(1, 1, 1)
@@ -169,6 +199,14 @@ function playStateUpdate(dt)
         end
     end
 
+    -- Scroll ground
+    groundPosition = groundPosition - groundSpeed * dt
+    groundPosition = groundPosition % -64
+
+    -- Scroll background
+    backgroundPosition = backgroundPosition - backgroundSpeed * dt
+    backgroundPosition = backgroundPosition % -256
+
     -- Check for collision
     for i, pipe in ipairs(pipes) do
         if player.x + player.width > pipe.x and player.x < pipe.x + pipeWidth then
@@ -199,24 +237,57 @@ function renderUI()
         love.graphics.setFont(font)
         local text = 'Press Space to Start'
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, gameWidth / 2 - textWidth / 2, gameHeight / 2 - 50)
+        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2 - 50))
     elseif gameState == states.play then
         love.graphics.setFont(fontXL)
         local text = score
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, gameWidth / 2 - textWidth / 2, 20)
+        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), 20)
     elseif gameState == states.gameOver then
         love.graphics.setFont(font)
         local text = 'Game Over'
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, gameWidth / 2 - textWidth / 2, gameHeight / 2 - 50)
+        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2 - 50))
 
         local text = 'Score: ' .. score
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, gameWidth / 2 - textWidth / 2, gameHeight / 2)
+        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2))
 
         local text = 'High Score: ' .. highScore
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, gameWidth / 2 - textWidth / 2, gameHeight / 2 + 20)
+        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2 + 20))
     end
+end
+
+function loadTextures()
+    local tiles = love.graphics.newImage('resources/sprites/tiles.png')
+
+    local greenPipeTopQuad = love.graphics.newQuad(0, 0, 32, 32, tiles:getDimensions())
+    local greenPipeMiddleQuad = love.graphics.newQuad(0, 32, 32, 16, tiles:getDimensions())
+    local greenPipeBottomQuad = love.graphics.newQuad(0, 48, 32, 32, tiles:getDimensions())
+
+    local groundTopQuad = love.graphics.newQuad(0, 80, 64, 16, tiles:getDimensions())
+    local groundFillQuad = love.graphics.newQuad(0, 96, 16, 16, tiles:getDimensions())
+
+    local background = love.graphics.newImage('resources/sprites/background.png')
+    local fullBackgroundQuad = love.graphics.newQuad(0, 0, 256, 256, background:getDimensions())
+    local backgroundTopQuad = love.graphics.newQuad(0, 0, 256, 1, background:getDimensions())
+
+    textures = {
+        tiles = tiles,
+        backgroundTexture = background,
+        greenPipe = {
+            top = greenPipeTopQuad,
+            middle = greenPipeMiddleQuad,
+            bottom = greenPipeBottomQuad
+        },
+        ground = {
+            top = groundTopQuad,
+            fill = groundFillQuad
+        },
+        background = {
+            full = fullBackgroundQuad,
+            top = backgroundTopQuad
+        }
+    }
 end

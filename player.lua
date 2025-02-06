@@ -7,8 +7,8 @@ function Player:new()
     local player = setmetatable({}, Player)
     player.x = gameWidth / 4
     player.y = gameHeight / 2
-    player.width = 30
-    player.height = 22
+    player.width = 15
+    player.height = 11
     player.velocity = 0
     player.rotation = 0
     player.gravity = 1000
@@ -53,18 +53,19 @@ end
 function Player:flop(dt)
     player.velocity = player.velocity + player.gravity * dt
     player.y = player.y + player.velocity * dt
-    player.rotation = player.velocity / player.maxVelocity * 0.5
 
     if player.y + player.height > gameHeight - floorHeight + 5 then
         player.y = gameHeight - floorHeight - player.height + 5
         player.velocity = 0
     end
+
+    player.rotation = player.velocity / player.maxVelocity * 0.5
 end
 
 function Player:draw()
     local centerX = self.x + self.width / 2
     local centerY = self.y + self.height / 2
-    self.animation:draw(self.image, centerX, centerY, self.rotation, 2, 2, 8, 8)
+    self.animation:draw(self.image, centerX, centerY, self.rotation, 1, 1, 8, 8)
 end
 
 function Player:jump()
