@@ -79,6 +79,9 @@ end
 function Player:jump()
     self.velocity = math.min(self.velocity, 0)
     self.velocity = math.max(self.velocity + self.jumpForce, -self.maxVelocity)
+
+    Sound:stop('jump')
+    Sound:play('jump')
 end
 
 return Player

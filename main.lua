@@ -1,6 +1,8 @@
 local Player = require 'player'
 local Config = require 'config'
 
+Sound = require 'sound'
+
 local windowWidth, windowHeight = Config.gameWidth * 2, Config.gameHeight * 2
 
 highScore = 0
@@ -40,6 +42,7 @@ end
 
 function love.load()
     loadTextures()
+    Sound:init()
 
     gameState = Config.states.start
 
@@ -173,6 +176,7 @@ function handleCollision()
         highScore = score
     end
 
+    Sound:play('hit')
     gameState = Config.states.gameOver
 end
 
@@ -218,6 +222,7 @@ function playStateUpdate(dt)
         if player.x > pipe.x + pipeWidth / 2 and not pipe.scored then
             score = score + 1
             pipe.scored = true
+            Sound:play('score')
         end
     end
 end
