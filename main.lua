@@ -1,19 +1,9 @@
 local Player = require 'player'
+local Config = require 'config'
 
-gameWidth = 180
-gameHeight = 320
-
-windowWidth, windowHeight = gameWidth * 2, gameHeight * 2
-
-states = {
-    start = 'start',
-    play = 'play',
-    gameOver = 'gameOver'
-}
+local windowWidth, windowHeight = Config.gameWidth * 2, Config.gameHeight * 2
 
 highScore = 0
-
-floorHeight = 32
 
 love.window.setTitle('Flappy Bird but Again!')
 love.window.setMode(windowWidth, windowHeight, {
@@ -29,9 +19,9 @@ love.graphics.setDefaultFilter('nearest', 'nearest')
 -- Create a pipe
 function createPipe()
     local pipe = {}
-    pipe.x = gameWidth + 50
+    pipe.x = Config.gameWidth + 50
     local minY = pipeGap / 2 + 32
-    local maxY = gameHeight - floorHeight - pipeGap / 2 - 32
+    local maxY = Config.gameHeight - Config.floorHeight - pipeGap / 2 - 32
     pipe.y = math.floor(math.random(minY, maxY))
     pipe.scored = false
 
@@ -42,7 +32,7 @@ function createPipe()
 
     pipe.bottom = {
         y = pipe.y + pipeGap / 2,
-        height = gameHeight - pipe.y - pipeGap / 2
+        height = Config.gameHeight - pipe.y - pipeGap / 2
     }
 
     return pipe
@@ -51,10 +41,10 @@ end
 function love.load()
     loadTextures()
 
-    gameState = states.start
+    gameState = Config.states.start
 
     -- Player table
-    player = Player:new()
+    player = Player:new(Config.gameWidth / 4, Config.gameHeight / 2)
 
     -- Set up pipes
     pipes = {}
@@ -83,7 +73,7 @@ end
 function love.update(dt)
     player:update(dt)
 
-    if (gameState == states.play) then
+    if (gameState == Config.states.play) then
         playStateUpdate(dt)
     end
 end
@@ -94,15 +84,16 @@ end
 
 function love.draw()
     -- Initialize canvas
-    local canvas = love.graphics.newCanvas(gameWidth, gameHeight)
+    local canvas = love.graphics.newCanvas(Config.gameWidth, Config.gameHeight)
     love.graphics.setCanvas(canvas)
 
     love.graphics.setColor(1, 1, 1)
 
     -- Draw background
     love.graphics.draw(textures.backgroundTexture, textures.background.top, 0, 0, 0, 1, 100)
-    for i = backgroundPosition, gameWidth, 256 do
-        love.graphics.draw(textures.backgroundTexture, textures.background.full, i, gameHeight - 256 - floorHeight)
+    for i = backgroundPosition, Config.gameWidth, 256 do
+        love.graphics.draw(textures.backgroundTexture, textures.background.full, i,
+            Config.gameHeight - 256 - Config.floorHeight)
     end
 
     -- Draw pipes
@@ -126,12 +117,12 @@ function love.draw()
     -- Draw floor as repeating tiles. Scrolling across the screen.
     love.graphics.setColor(1, 1, 1)
     -- Top level
-    for i = groundPosition, gameWidth, 64 do
-        love.graphics.draw(textures.tiles, textures.ground.top, i, gameHeight - floorHeight)
+    for i = groundPosition, Config.gameWidth, 64 do
+        love.graphics.draw(textures.tiles, textures.ground.top, i, Config.gameHeight - Config.floorHeight)
     end
     -- Fill
-    for i = groundPosition, gameWidth, 16 do
-        love.graphics.draw(textures.tiles, textures.ground.fill, i, gameHeight - floorHeight + 16)
+    for i = groundPosition, Config.gameWidth, 16 do
+        love.graphics.draw(textures.tiles, textures.ground.fill, i, Config.gameHeight - Config.floorHeight + 16)
     end
 
     -- Draw player
@@ -141,8 +132,9 @@ function love.draw()
     -- Reset canvas
     love.graphics.setCanvas()
     love.graphics.setColor(1, 1, 1)
-    local ratio = math.min(windowWidth / gameWidth, windowHeight / gameHeight)
-    love.graphics.draw(canvas, windowWidth / 2, windowHeight / 2, 0, ratio, ratio, gameWidth / 2, gameHeight / 2)
+    local ratio = math.min(windowWidth / Config.gameWidth, windowHeight / Config.gameHeight)
+    love.graphics.draw(canvas, windowWidth / 2, windowHeight / 2, 0, ratio, ratio, Config.gameWidth / 2,
+        Config.gameHeight / 2)
 end
 
 function love.keypressed(key)
@@ -166,12 +158,12 @@ function love.touchpressed(id, x, y, dx, dy, pressure)
 end
 
 function actionHandler()
-    if gameState == states.start then
-        gameState = states.play
+    if gameState == Config.states.start then
+        gameState = Config.states.play
         player:jump()
-    elseif gameState == states.play then
+    elseif gameState == Config.states.play then
         player:jump()
-    elseif gameState == states.gameOver then
+    elseif gameState == Config.states.gameOver then
         love.load()
     end
 end
@@ -181,7 +173,7 @@ function handleCollision()
         highScore = score
     end
 
-    gameState = states.gameOver
+    gameState = Config.states.gameOver
 end
 
 function playStateUpdate(dt)
@@ -217,7 +209,7 @@ function playStateUpdate(dt)
     end
 
     -- Check for floor
-    if player.y + player.height > gameHeight - floorHeight then
+    if player.y + player.height > Config.gameHeight - Config.floorHeight then
         handleCollision()
     end
 
@@ -233,29 +225,32 @@ end
 function renderUI()
     love.graphics.setColor(0, 0, 0)
 
-    if gameState == states.start then
+    if gameState == Config.states.start then
         love.graphics.setFont(font)
         local text = 'Press Space to Start'
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2 - 50))
-    elseif gameState == states.play then
+        love.graphics.print(text, math.floor(Config.gameWidth / 2 - textWidth / 2),
+            math.floor(Config.gameHeight / 2 - 50))
+    elseif gameState == Config.states.play then
         love.graphics.setFont(fontXL)
         local text = score
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), 20)
-    elseif gameState == states.gameOver then
+        love.graphics.print(text, math.floor(Config.gameWidth / 2 - textWidth / 2), 20)
+    elseif gameState == Config.states.gameOver then
         love.graphics.setFont(font)
         local text = 'Game Over'
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2 - 50))
+        love.graphics.print(text, math.floor(Config.gameWidth / 2 - textWidth / 2),
+            math.floor(Config.gameHeight / 2 - 50))
 
         local text = 'Score: ' .. score
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2))
+        love.graphics.print(text, math.floor(Config.gameWidth / 2 - textWidth / 2), math.floor(Config.gameHeight / 2))
 
         local text = 'High Score: ' .. highScore
         local textWidth = font:getWidth(text)
-        love.graphics.print(text, math.floor(gameWidth / 2 - textWidth / 2), math.floor(gameHeight / 2 + 20))
+        love.graphics.print(text, math.floor(Config.gameWidth / 2 - textWidth / 2),
+            math.floor(Config.gameHeight / 2 + 20))
     end
 end
 

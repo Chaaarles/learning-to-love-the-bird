@@ -1,12 +1,14 @@
-anim8 = require "lib.anim8"
+local anim8 = require "lib.anim8"
+local Config = require 'config'
 
 local Player = {}
 Player.__index = Player
 
-function Player:new()
+-- Create a new player
+function Player:new(startX, startY)
     local player = setmetatable({}, Player)
-    player.x = gameWidth / 4
-    player.y = gameHeight / 2
+    player.x = startX
+    player.y = startY
     player.width = 15
     player.height = 11
     player.velocity = 0
@@ -22,55 +24,61 @@ function Player:new()
     return player
 end
 
+-- Update player state
 function Player:update(dt)
-    if gameState == states.start then
-        self:oscilate(dt)
-    elseif gameState == states.play then
+    if gameState == Config.states.start then
+        self:oscillate(dt)
+    elseif gameState == Config.states.play then
         self:flap(dt)
-    elseif gameState == states.gameOver then
+    elseif gameState == Config.states.gameOver then
         self:flop(dt)
     end
 end
 
-function Player:oscilate(dt)
-    player.y = player.y + math.sin(love.timer.getTime() * 5) * dt * 50
+-- Start screen behaviour
+function Player:oscillate(dt)
+    self.y = self.y + math.sin(love.timer.getTime() * 5) * dt * 50
     self.animation:update(dt)
 end
 
+-- Play screen behaviour
 function Player:flap(dt)
     self.velocity = self.velocity + self.gravity * dt
-    if self.velocity > self.maxVelocity then
-        self.velocity = self.maxVelocity
-    elseif self.velocity < -self.maxVelocity then
-        self.velocity = -self.maxVelocity
-    end
+    self.velocity = math.max(math.min(self.velocity, self.maxVelocity), -self.maxVelocity)
 
     self.rotation = self.velocity / self.maxVelocity * 0.5
     self.y = self.y + self.velocity * dt
     self.animation:update(dt)
 end
 
+-- Game over screen behaviour
 function Player:flop(dt)
-    player.velocity = player.velocity + player.gravity * dt
-    player.y = player.y + player.velocity * dt
+    self.velocity = self.velocity + self.gravity * dt
+    self.y = self.y + self.velocity * dt
+    local groundEmbrace = Config.gameHeight - Config.floorHeight - self.height + 5
 
-    if player.y + player.height > gameHeight - floorHeight + 5 then
-        player.y = gameHeight - floorHeight - player.height + 5
-        player.velocity = 0
+    if self.y + self.height > groundEmbrace then
+        self.y = groundEmbrace
+        self.velocity = 0
     end
 
-    player.rotation = player.velocity / player.maxVelocity * 0.5
+    self.rotation = self.velocity / self.maxVelocity * 0.5
 end
 
+-- Draw player to the screen
 function Player:draw()
     local centerX = self.x + self.width / 2
     local centerY = self.y + self.height / 2
+
+    -- Draw the player sprite in the center of the player's hitbox
+    -- The player sprite is 16x16, so we need to offset it by 8x8 
     self.animation:draw(self.image, centerX, centerY, self.rotation, 1, 1, 8, 8)
 end
 
+-- Add a jump force to the player
 function Player:jump()
     self.velocity = math.min(self.velocity, 0)
-    self.velocity = self.velocity + self.jumpForce
+    self.velocity = math.max(self.velocity + self.jumpForce, -self.maxVelocity)
 end
 
 return Player
