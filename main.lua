@@ -1,11 +1,10 @@
 local Player = require 'player'
 local Config = require 'config'
+local ScoreManager = require 'score-manager'
 
 Sound = require 'sound'
 
 local windowWidth, windowHeight = Config.gameWidth * 2, Config.gameHeight * 2
-
-highScore = 0
 
 love.window.setTitle('Flappy Bird but Again!')
 love.window.setMode(windowWidth, windowHeight, {
@@ -48,6 +47,8 @@ function love.load()
 
     -- Player table
     player = Player:new(Config.gameWidth / 4, Config.gameHeight / 2)
+
+    scoreManager = ScoreManager:new()
 
     -- Set up pipes
     pipes = {}
@@ -172,9 +173,7 @@ function actionHandler()
 end
 
 function handleCollision()
-    if score > highScore then
-        highScore = score
-    end
+    scoreManager:compare(score)
 
     Sound:play('hit')
     gameState = Config.states.gameOver
@@ -252,7 +251,7 @@ function renderUI()
         local textWidth = font:getWidth(text)
         love.graphics.print(text, math.floor(Config.gameWidth / 2 - textWidth / 2), math.floor(Config.gameHeight / 2))
 
-        local text = 'High Score: ' .. highScore
+        local text = 'High Score: ' .. scoreManager.highscore
         local textWidth = font:getWidth(text)
         love.graphics.print(text, math.floor(Config.gameWidth / 2 - textWidth / 2),
             math.floor(Config.gameHeight / 2 + 20))
